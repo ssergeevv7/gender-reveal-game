@@ -478,7 +478,7 @@
     
     <script>
         // ВАЖНО! Замените этот URL на ваш URL из Google Apps Script
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsHZjbhP1QNZgX5QPV1sxcYtR_IrNiH3JBpA7zCR18UcW2alCBY-8t4RjiUSnc6h4zYA/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNCJENG7H0RoTL5w_RRR52Y_kItomornBVd5-XUQzSC11Pqt2e7sWEscxNaXECSKdReA/exec';
         
         let selectedGender = null;
         let selectedTier = null;
@@ -621,13 +621,21 @@
             }
             
             try {
-                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getStats`);
-                const data = await response.json();
+                // Use JSONP approach for GET requests to avoid CORS
+                const script = document.createElement('script');
+                const callbackName = 'handleStatsResponse' + Date.now();
                 
-                if (data.success) {
-                    updateStatsDisplay(data.stats);
-                    updateOdds(data.stats);
-                }
+                window[callbackName] = function(data) {
+                    if (data.success) {
+                        updateStatsDisplay(data.stats);
+                        updateOdds(data.stats);
+                    }
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                };
+                
+                script.src = `${GOOGLE_SCRIPT_URL}?action=getStats&callback=${callbackName}`;
+                document.body.appendChild(script);
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
