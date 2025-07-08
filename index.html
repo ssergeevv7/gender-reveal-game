@@ -315,13 +315,15 @@
         <div class="odds-display">
             <div class="odds-card boy" onclick="selectGender('boy')">
                 <div class="gender-icon">👶🏻‍♂️</div>
-                <div class="odds-value" id="boyOdds">1.89x</div>
+                <div class="odds-value" id="boyOdds">50%</div>
                 <div class="odds-label">Мальчик</div>
+                <div class="bet-info" id="boyBetInfo">0 ставок</div>
             </div>
             <div class="odds-card girl" onclick="selectGender('girl')">
                 <div class="gender-icon">👶🏻‍♀️</div>
-                <div class="odds-value" id="girlOdds">2.00x</div>
+                <div class="odds-value" id="girlOdds">50%</div>
                 <div class="odds-label">Девочка</div>
+                <div class="bet-info" id="girlBetInfo">0 ставок</div>
             </div>
         </div>
         
@@ -369,7 +371,10 @@
             
             <div class="potential-win" id="potentialWin">
                 <div>Ваш потенциальный выигрыш:</div>
-                <div class="win-amount" id="winAmount">0₽</div>
+                <div class="win-amount" id="winAmount">Рассчитывается...</div>
+                <div style="font-size: 12px; margin-top: 5px; opacity: 0.8;">
+                    *Зависит от общего количества ставок
+                </div>
             </div>
             
             <div class="form-section" id="existingBetSection" style="display: none;">
@@ -396,6 +401,22 @@
             ❌ Ошибка при отправке. Попробуйте еще раз.
         </div>
         
+        <div class="financial-info">
+            <h3>💡 Как работает игра:</h3>
+            <div class="info-text">
+                <p><strong>Принцип "Общий банк":</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Все ставки идут в общий банк</li>
+                    <li>Организатор берет 10% комиссию</li>
+                    <li>Победители делят оставшиеся 90% пропорционально ставкам</li>
+                    <li>Участвуют только оплаченные ставки</li>
+                    <li>Чем меньше людей угадает - тем больше выигрыш!</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>Пример:</strong> Если общий банк 20,000₽ и родится девочка, 
+                а на девочку поставили 5 человек - они разделят 18,000₽ (после вычета 10% комиссии)!</p>
+            </div>
+        </div>
+        
         <div class="deadline">
             ⏰ Прием ставок до 19 июля 2025
         </div>
@@ -409,6 +430,14 @@
             <div class="stat-row">
                 <span>Общий банк:</span>
                 <span id="totalPot">Загрузка...</span>
+            </div>
+            <div class="stat-row">
+                <span>Комиссия организатора (10%):</span>
+                <span id="commission">Загрузка...</span>
+            </div>
+            <div class="stat-row">
+                <span>К розыгрышу:</span>
+                <span id="prizePool">Загрузка...</span>
             </div>
             <div class="stat-row">
                 <span>Ставки на мальчика:</span>
@@ -550,11 +579,38 @@
             const potentialWinDiv = document.getElementById('potentialWin');
             const winAmountDiv = document.getElementById('winAmount');
             
-            let baseOdds = selectedGender === 'boy' ? 1.89 : 2.00;
-            let tierBonus = selectedTier === 'gold' ? 1.10 : (selectedTier === 'silver' ? 1.05 : 1.00);
-            let totalWin = Math.round(selectedAmount * baseOdds * tierBonus);
+            // Получаем текущую статистику из отображения
+            const totalPotText = document.getElementById('totalPot').textContent;
+            const totalPot = parseInt(totalPotText.replace('₽', '')) || 0;
             
-            winAmountDiv.textContent = `${totalWin}₽`;
+            const boyBetsText = document.getElementById('boyBets').textContent;
+            const boySum = parseInt(boyBetsText.match(/\((\d+)₽\)/)?.[1]) || 0;
+            
+            const girlBetsText = document.getElementById('girlBets').textContent;
+            const girlSum = parseInt(girlBetsText.match(/\((\d+)₽\)/)?.[1]) || 0;
+            
+            // Добавляем текущую ставку к расчету
+            const newTotalPot = totalPot + selectedAmount;
+            const selectedSum = selectedGender === 'boy' ? boySum + selectedAmount : girlSum + selectedAmount;
+            
+            // Вычитаем комиссию 10%
+            const prizePool = newTotalPot * 0.9;
+            
+            let potentialWin = 0;
+            if (selectedSum > 0) {
+                // Доля игрока от общей суммы ставок на выбранный пол
+                const shareRatio = selectedAmount / selectedSum;
+                // Потенциальный выигрыш = доля от призового фонда (после комиссии)
+                potentialWin = Math.round(prizePool * shareRatio);
+            } else {
+                potentialWin = Math.round(prizePool); // Если первая ставка на этот пол
+            }
+            
+            // Учитываем бонус за уровень ставки
+            let tierBonus = selectedTier === 'gold' ? 1.10 : (selectedTier === 'silver' ? 1.05 : 1.00);
+            potentialWin = Math.round(potentialWin * tierBonus);
+            
+            winAmountDiv.innerHTML = `~${potentialWin}₽*`;
             potentialWinDiv.classList.add('show');
         }
         
@@ -580,29 +636,32 @@
         function updateStatsDisplay(stats) {
             document.getElementById('totalBets').textContent = stats.totalBets;
             document.getElementById('totalPot').textContent = `${stats.totalPot}₽`;
+            
+            // Показываем комиссию и призовой фонд
+            const commission = Math.round(stats.totalPot * 0.10);
+            const prizePool = stats.totalPot - commission;
+            document.getElementById('commission').textContent = `${commission}₽`;
+            document.getElementById('prizePool').textContent = `${prizePool}₽`;
+            
             document.getElementById('boyBets').textContent = `${stats.boyCount} (${stats.boySum}₽)`;
             document.getElementById('girlBets').textContent = `${stats.girlCount} (${stats.girlSum}₽)`;
             document.getElementById('leraStats').textContent = `${stats.leraCount} участников`;
             document.getElementById('leraScore').textContent = `${stats.leraSum}₽`;
             document.getElementById('artemStats').textContent = `${stats.artemCount} участников`;
             document.getElementById('artemScore').textContent = `${stats.artemSum}₽`;
+            
+            // Обновляем проценты и информацию о ставках
+            const boyPercent = stats.totalPot > 0 ? Math.round((stats.boySum / stats.totalPot) * 100) : 50;
+            const girlPercent = stats.totalPot > 0 ? Math.round((stats.girlSum / stats.totalPot) * 100) : 50;
+            
+            document.getElementById('boyOdds').textContent = `${boyPercent}%`;
+            document.getElementById('girlOdds').textContent = `${girlPercent}%`;
+            document.getElementById('boyBetInfo').textContent = `${stats.boyCount} ставок`;
+            document.getElementById('girlBetInfo').textContent = `${stats.girlCount} ставок`;
         }
         
         function updateOdds(stats) {
-            const total = stats.boySum + stats.girlSum;
-            if (total > 0) {
-                const boyRatio = stats.boySum / total;
-                const girlRatio = stats.girlSum / total;
-                
-                let boyOdds = girlRatio > 0 ? (1.5 + (girlRatio * 0.8)) : 1.89;
-                let girlOdds = boyRatio > 0 ? (1.5 + (boyRatio * 0.8)) : 2.00;
-                
-                boyOdds = Math.round(boyOdds * 0.95 * 100) / 100;
-                girlOdds = Math.round(girlOdds * 100) / 100;
-                
-                document.getElementById('boyOdds').textContent = `${boyOdds}x`;
-                document.getElementById('girlOdds').textContent = `${girlOdds}x`;
-            }
+            // Функция больше не нужна, так как проценты обновляются в updateStatsDisplay
         }
         
         document.getElementById('betForm').addEventListener('submit', async (e) => {
