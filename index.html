@@ -421,15 +421,15 @@
                 <div class="tier-selection">
                     <div class="tier-option bronze" onclick="selectTier('bronze', 500)">
                         <div class="tier-amount">500₽</div>
-                        <div class="tier-bonus">Бронза</div>
+                        <div class="tier-bonus">Минимум</div>
                     </div>
                     <div class="tier-option silver" onclick="selectTier('silver', 1000)">
                         <div class="tier-amount">1000₽</div>
-                        <div class="tier-bonus">Серебро +5%</div>
+                        <div class="tier-bonus">Стандарт</div>
                     </div>
                     <div class="tier-option gold" onclick="selectTier('gold', 2000)">
                         <div class="tier-amount">2000₽</div>
-                        <div class="tier-bonus">Золото +10%</div>
+                        <div class="tier-bonus">Максимум</div>
                     </div>
                 </div>
                 <p class="disclaimer">⚠️ С вами свяжутся для перевода суммы ставки</p>
@@ -484,7 +484,7 @@
         </div>
         
         <div class="deadline">
-            ⏰ Прием ставок до 30 июля 2025
+            ⏰ Прием ставок до 19 июля 2025
         </div>
         
         <div class="stats">
@@ -544,7 +544,7 @@
     
     <script>
         // ВАЖНО! Замените этот URL на ваш URL из Google Apps Script
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQSRJZyCFybqELm8JPCG2_xVnlk-cVKvl8tiDrCScx46PAHnQlrKbfJHQB7-QVw-REKw/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDDZbmaqWPGuwoNogW0PQznDOgPjGEuSYslWyLJ3nX80xAAURXAIXUDmLgAjviaI13Yg/exec';
         
         let selectedGender = null;
         let selectedTier = null;
@@ -671,10 +671,6 @@
             } else {
                 potentialWin = Math.round(prizePool); // Если первая ставка на этот пол
             }
-            
-            // Учитываем бонус за уровень ставки
-            let tierBonus = selectedTier === 'gold' ? 1.10 : (selectedTier === 'silver' ? 1.05 : 1.00);
-            potentialWin = Math.round(potentialWin * tierBonus);
             
             winAmountDiv.innerHTML = `~${potentialWin}₽*`;
             potentialWinDiv.classList.add('show');
